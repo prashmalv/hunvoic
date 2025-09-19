@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+openai
+qdrant-client
+langchain
+python-multipart
+aiofiles
+requests
+pydantic
+python-dotenv
+google-cloud-texttospeech
+sendgrid
+sentence-transformers
+google.generativeai
+whisperx==3.4.2
