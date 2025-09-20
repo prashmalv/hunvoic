@@ -7,9 +7,18 @@ from .stt import transcribe_audio_bytes
 from .tts import synthesize_text_stream
 from .qdrant_ingest import ingest_documents
 from dotenv import load_dotenv
+from fastapi.middleware.cors import CORSMiddleware
 import tempfile
 
 app = FastAPI()
+# Allow frontend requests
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # demo ke liye sab allow, prod me domain specific karna
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 agent = RagAgent()
 
 # Explicitly load the .env file from the backend folder
@@ -55,4 +64,5 @@ async def ask(session_id: str = Form(...), audio: UploadFile = File(None), text:
 @app.get('/tts')
 async def tts_get(text: str):
     stream = synthesize_text_stream(text)
-    return StreamingResponse(stream, media_type='audio/wav')
+    return StreamingResponse(stream, media_type='audio/mpeg')  
+
