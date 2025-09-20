@@ -18,7 +18,15 @@ from .models import SessionLocal, Conversation
 # audio conversion
 from pydub import AudioSegment
 
+from fastapi.staticfiles import StaticFiles
+
+
+
 app = FastAPI()
+
+# Serve static audio files
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 
 # Allow frontend requests (demo: all origins allowed)
 app.add_middleware(
@@ -112,7 +120,7 @@ async def ask_voice(session_id: str = Form(...), audio: UploadFile = File(...)):
     except Exception as e:
         return JSONResponse({"error": f"Audio conversion failed: {e}"}, status_code=400)
 
-    # 2. STT
+    # 2. STT → get user text
     user_text = await transcribe_audio_bytes(wav_bytes)
     save_message(session_id, "user", user_text)
 
@@ -120,14 +128,21 @@ async def ask_voice(session_id: str = Form(...), audio: UploadFile = File(...)):
     resp_text = agent.answer(user_text, session_id=session_id)
     save_message(session_id, "agent", resp_text)
 
-    # 4. Convert answer to speech
-    path = synthesize_text(resp_text)
-    def iterfile():
-        with open(path, "rb") as f:
-            while chunk := f.read(4096):
-                yield chunk
+    # 4. Convert answer to speech & save to temp file
+    audio_path = synthesize_text(resp_text)  # returns path of mp3/wav
+    audio_filename = f"{uuid4()}.mp3"
+    static_dir = Path("static/audio")
+    static_dir.mkdir(parents=True, exist_ok=True)
+    final_path = static_dir / audio_filename
+    os.replace(audio_path, final_path)
 
-    return StreamingResponse(iterfile(), media_type="audio/mpeg")
+    # Return JSON instead of streaming
+    return {
+        "user_text": user_text,
+        "resp_text": resp_text,
+        "audio_url": f"/static/audio/{audio_filename}"
+    }
+
 
 # ✅ Get conversation history
 @app.get("/history/{session_id}")
