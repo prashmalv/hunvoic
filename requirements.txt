@@ -12,4 +12,7 @@ google-cloud-texttospeech
 sendgrid
 sentence-transformers
 google.generativeai
+sqlalchemy
+pydub
+ffmpeg-python
 whisperx==3.4.2
